@@ -633,7 +633,8 @@ typedef struct amqp_rpc_reply_t_ {
  * \since v0.1
  */
 typedef enum amqp_sasl_method_enum_ {
-  AMQP_SASL_METHOD_PLAIN = 0      /**< the PLAIN SASL method for authentication to the broker */
+  AMQP_SASL_METHOD_PLAIN = 0,      /**< the PLAIN SASL method for authentication to the broker */
+  AMQP_SASL_METHOD_EXTERNAL = 1    /**< the EXTERNAL SASL method for authentication to the broker */
 } amqp_sasl_method_enum;
 
 /**
@@ -697,6 +698,9 @@ typedef enum amqp_status_enum_
                                                         heartbeat */
   AMQP_STATUS_UNEXPECTED_STATE =          -0x0010, /**< Unexpected protocol
                                                         state */
+  AMQP_STATUS_BROKER_UNSUPPORTED_SASL_METHOD = -0x0011, /**< Broker does not
+                                                          support the requested
+                                                          SASL mechanism */
 
   AMQP_STATUS_TCP_ERROR =                 -0x0100, /**< A generic TCP error
                                                         occurred */
