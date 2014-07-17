@@ -250,3 +250,10 @@ amqp_pool_t *amqp_get_channel_pool(amqp_connection_state_t state, amqp_channel_t
 
   return NULL;
 }
+
+int amqp_bytes_equal(amqp_bytes_t r, amqp_bytes_t l) {
+  if (r.len == l.len && 0 == memcmp(r.bytes, l.bytes, r.len)) {
+    return 1;
+  }
+  return 0;
+}
