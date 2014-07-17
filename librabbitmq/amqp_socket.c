@@ -1251,8 +1251,7 @@ static amqp_rpc_reply_t amqp_login_inner(amqp_connection_state_t state,
 
     s.mechanism = sasl_method_name(sasl_method);
     s.response = response_bytes;
-    s.locale.bytes = "en_US";
-    s.locale.len = 5;
+    s.locale = amqp_cstring_bytes("en_US");
 
     res = amqp_send_method(state, 0, AMQP_CONNECTION_START_OK_METHOD, &s);
     if (res < 0) {
