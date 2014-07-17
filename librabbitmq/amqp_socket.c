@@ -1139,6 +1139,33 @@ static int amqp_merge_capabilities(const amqp_table_t *base,
   return AMQP_STATUS_OK;
 }
 
+static amqp_table_entry_t amqp_table_construct_utf8_entry(const char *key,
+                                                          const char *value) {
+  amqp_table_entry_t ret;
+  ret.key = amqp_cstring_bytes(key);
+  ret.value.kind = AMQP_FIELD_KIND_UTF8;
+  ret.value.value.bytes = amqp_cstring_bytes(value);
+  return ret;
+}
+
+static amqp_table_entry_t
+amqp_table_construct_table_entry(const char *key, const amqp_table_t *value) {
+  amqp_table_entry_t ret;
+  ret.key = amqp_cstring_bytes(key);
+  ret.value.kind = AMQP_FIELD_KIND_TABLE;
+  ret.value.value.table = *value;
+  return ret;
+}
+
+static amqp_table_entry_t amqp_table_construct_bool_entry(const char *key,
+                                                          const int value) {
+  amqp_table_entry_t ret;
+  ret.key = amqp_cstring_bytes(key);
+  ret.value.kind = AMQP_FIELD_KIND_BOOLEAN;
+  ret.value.value.boolean = value;
+  return ret;
+}
+
 static amqp_rpc_reply_t amqp_login_inner(amqp_connection_state_t state,
     char const *vhost,
     int channel_max,
@@ -1187,8 +1214,10 @@ static amqp_rpc_reply_t amqp_login_inner(amqp_connection_state_t state,
   }
 
   {
-    amqp_table_entry_t default_properties[5];
+    amqp_table_entry_t default_properties[6];
     amqp_table_t default_table;
+    amqp_table_entry_t client_capabilities[1];
+    amqp_table_t client_capabilities_table;
     amqp_connection_start_ok_t s;
     amqp_pool_t *channel_pool;
     amqp_bytes_t response_bytes;
@@ -1206,36 +1235,29 @@ static amqp_rpc_reply_t amqp_login_inner(amqp_connection_state_t state,
       goto error_res;
     }
 
-    default_properties[0].key = amqp_cstring_bytes("product");
-    default_properties[0].value.kind = AMQP_FIELD_KIND_UTF8;
-    default_properties[0].value.value.bytes =
-      amqp_cstring_bytes("rabbitmq-c");
+    client_capabilities[0] =
+        amqp_table_construct_bool_entry("authentication_failure_close", 1);
 
-    /* version */
-    default_properties[1].key = amqp_cstring_bytes("version");
-    default_properties[1].value.kind = AMQP_FIELD_KIND_UTF8;
-    default_properties[1].value.value.bytes =
-        amqp_cstring_bytes(AMQP_VERSION_STRING);
+    client_capabilities_table.entries = client_capabilities;
+    client_capabilities_table.num_entries =
+        sizeof(client_capabilities) / sizeof(amqp_table_entry_t);
 
-    /* platform */
-    default_properties[2].key = amqp_cstring_bytes("platform");
-    default_properties[2].value.kind = AMQP_FIELD_KIND_UTF8;
-    default_properties[2].value.value.bytes =
-        amqp_cstring_bytes(AMQ_PLATFORM);
-
-    /* copyright */
-    default_properties[3].key = amqp_cstring_bytes("copyright");
-    default_properties[3].value.kind = AMQP_FIELD_KIND_UTF8;
-    default_properties[3].value.value.bytes =
-        amqp_cstring_bytes(AMQ_COPYRIGHT);
-
-    default_properties[4].key = amqp_cstring_bytes("information");
-    default_properties[4].value.kind = AMQP_FIELD_KIND_UTF8;
-    default_properties[4].value.value.bytes =
-      amqp_cstring_bytes("See https://github.com/alanxz/rabbitmq-c");
+    default_properties[0] =
+        amqp_table_construct_utf8_entry("product", "rabbitmq-c");
+    default_properties[1] =
+        amqp_table_construct_utf8_entry("version", AMQP_VERSION_STRING);
+    default_properties[2] =
+        amqp_table_construct_utf8_entry("platform", AMQ_PLATFORM);
+    default_properties[3] =
+        amqp_table_construct_utf8_entry("copyright", AMQ_COPYRIGHT);
+    default_properties[4] = amqp_table_construct_utf8_entry(
+        "information", "See https://github.com/alanxz/rabbitmq-c");
+    default_properties[5] = amqp_table_construct_table_entry(
+        "capabilities", &client_capabilities_table);
 
     default_table.entries = default_properties;
-    default_table.num_entries = sizeof(default_properties) / sizeof(amqp_table_entry_t);
+    default_table.num_entries =
+        sizeof(default_properties) / sizeof(amqp_table_entry_t);
 
     res = amqp_merge_capabilities(&default_table, client_properties,
                             &s.client_properties, channel_pool);
